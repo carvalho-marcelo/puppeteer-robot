@@ -1,0 +1,1 @@
+<p align="center">A simple program using <a href="https://pptr.dev/">puppeteer library</a></p>
