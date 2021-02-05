@@ -1,15 +1,14 @@
 const puppeteer = require('puppeteer');
+const express = require('express');
+const cors = require('cors');
 
-async function start() {
-
+async function getWeather(city) {
     const browser = await puppeteer.launch({ headless: true });
     const page = await browser.newPage();
     await page.setViewport({
         width: 1920,
         height: 1080
     });
-
-    const city = 'São Paulo';
 
     await page.goto('https://lerolero.com');
 
@@ -21,9 +20,9 @@ async function start() {
     });
 
     await page.goto(`https://www.google.com/search?q=weather+${city}&oq=weather+${city}&aqs=chrome..69i57j0l4j46j69i60l2.9187j1j7&sourceid=chrome&ie=UTF-8`);
-    await page.screenshot({ path: 'weather.png' });
+    // await page.screenshot({ path: 'weather.png' });
 
-    const data = await page.evaluate(() => {
+    let data = await page.evaluate(() => {
         let temperature = document.querySelector('#wob_tm').innerHTML;
         let weather = document.querySelector('#wob_dc').innerHTML;
         let rain = document.querySelector('#wob_pp').innerHTML;
@@ -31,6 +30,8 @@ async function start() {
         let day = date[0];
         let hour = Number(date[1].replace(':', ''));
         let location = document.querySelector('#wob_loc').innerHTML;
+        let errorMessage = '';
+        let img = document.querySelector('#wob_tci').src;
 
         return {
             temperature,
@@ -38,31 +39,51 @@ async function start() {
             rain,
             day,
             hour,
-            location
+            location,
+            errorMessage,
+            img
         }
+    }).catch(() => {
+        return { errorMessage: 'city not found or page doesn\'t exist' };
     });
     
-    const greeting = setGreeting(data.hour);
-
-    console.log(`\n${greeting}! Hoje é ${data.day} o tempo está ${data.weather} com a temperatura de ${data.temperature}°C e probabilidade de chuva de ${data.rain} em ${data.location}`);
-    console.log(`A frase aleatória do dia é: "${quote}"`);
-    console.log('Aproveite!');
+    if (data.errorMessage === '') {
+        let greeting = setGreeting(data.hour);
+        data = { ...data, greeting, quote };
+    }
 
     await browser.close();
+    return data;
 }
 
 function setGreeting(hour) {
     let greeting = 'Saudações';
     if (hour < 600) {
-        greeting = 'Boa madrugada';
+        greeting = 'Boa madrugada!';
     } else if (hour < 1200) {
-        greeting = 'Bom dia';
+        greeting = 'Bom dia!';
     } else if (hour < 1800) {
-        greeting = 'Boa tarde';
+        greeting = 'Boa tarde!';
     } else {
-        greeting = 'Boa noite';
+        greeting = 'Boa noite!';
     }
     return greeting;
 }
 
-start();
+// expondo a "API" na porta 6272
+const app = express();
+app.use(cors());
+
+app.get('/:city', (req, res) => {
+    getWeather(req.params.city).then(
+        data => {
+            return res.json(data);
+        }
+    ).catch(
+        erro => {
+            console.log(erro);
+        }
+    );
+});
+
+app.listen('6272');
