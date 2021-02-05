@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <title>Robozin</title>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.gstatic.com" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" type="text/css" href="index.css">
+</head>
+
+<body>
+    <div class="container">
+    </div>
+
+    <script>
+        frontPage();
+
+        function frontPage() {
+            document.querySelector('.container').innerHTML = `
+                <div class="title">
+                    <h1>Weather forecast</h1>
+                </div>
+                <div class="content">
+                    <form onsubmit="event.preventDefault(); getWeather();">
+                        <input id="city" value="" placeholder="Enter the city name" required />
+                        
+                        <button id="btnSend" type="button" onclick="getWeather()">Send</button>
+                    </form>
+                </div>
+            `;
+        }
+
+        async function getWeather() {
+            const city = document.getElementById('city').value;
+            if (city !== null && city.trim() !== '') {
+                document.querySelector('.content').innerHTML = "<p>Aguarde...</p>";
+
+                try {
+                    const response = await fetch(`http://localhost:6272/${city}`);
+                    const data = await response.json();
+
+                    if (data.errorMessage === '') {
+                        show(data);
+                    } else {
+                        showError(data);
+                    }
+                    
+                } catch (error) {
+                    console.log(error);
+                }
+            }
+        }
+
+        function show(data) {
+            let output = `
+                <div class="title">
+                    <h1>${data.greeting}</h1>
+                </div>
+                <div class="content">
+                    <img src="${data.img}" />
+                    <p><b>City:</b> ${data.location}</p>
+                    <p><b>Temperature:</b> ${data.temperature}°C</p>
+                    <p><b>Weather:</b> ${data.weather}</p>
+                    <p><b>Chance of Precipitation:</b> ${data.rain}</p>
+                    <p><b>Weekday:</b> ${data.day}</p>
+                    <p><b>Quote of the day:</b> <i>"${data.quote}"</i></p>
+                    <button id="btnReturn" type="button" onclick="frontPage()">Try again</button>
+                </div>
+            `;
+
+            document.querySelector('div').innerHTML = output;
+        }
+
+        function showError(data) {
+            let output = `
+                <div class="title">
+                    <h1>ERROR</h1>
+                </div>
+                <div class="content">
+                    <p><b>Error:</b> ${data.errorMessage}</p>
+                    <button id="btnReturn" type="button" onclick="frontPage()">Try again</button>
+                </div>
+            `;
+
+            document.querySelector('div').innerHTML = output;
+        }
+
+    </script>
+</body>
+
+</html>
